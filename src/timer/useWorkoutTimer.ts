@@ -34,8 +34,9 @@ function beep(ctx: AudioContext, freq: number, dur: number, vol = 1.0) {
 
 // ── Glocke (Boxing Bell) – extrem laut, authentischer Klang ───────────────
 // Eine echte Glocke besteht aus mehreren Obertönen mit langer Ausschwingzeit.
-function playBell(ctx: AudioContext) {
-  const now  = ctx.currentTime
+// offset: Verzögerung in Sekunden, decayScale: kürzere/längere Ausschwingzeit
+function playBell(ctx: AudioContext, offset = 0, decayScale = 1) {
+  const now  = ctx.currentTime + offset
   const base = 440  // A4 – klassischer Glockengrundton
 
   // Obertöne: [Frequenz, Lautstärke, Ausschwingzeit in Sekunden]
@@ -58,7 +59,8 @@ function playBell(ctx: AudioContext) {
   comp.release.value    = 0.5
   comp.connect(ctx.destination)
 
-  for (const [freq, amp, decay] of partials) {
+  for (const [freq, amp, baseDecay] of partials) {
+    const decay = baseDecay * decayScale
     const osc  = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.connect(gain)
@@ -70,6 +72,72 @@ function playBell(ctx: AudioContext) {
     gain.gain.exponentialRampToValueAtTime(0.0001, now + decay)
     osc.start(now)
     osc.stop(now + decay + 0.1)
+  }
+}
+
+// Rundenende: drei laute Glockenschläge (ding ding ding)
+function playDings(ctx: AudioContext) {
+  for (let i = 0; i < 3; i++) playBell(ctx, i * 0.85, 0.45)
+}
+
+// ── 10-Sekunden-Warnung: 3 dumpfe, sehr laute Schläge (kein Nachschwingen) ──
+function playDullHits(ctx: AudioContext) {
+  // Harter Limiter: erlaubt eine sehr hohe Eingangslautstärke ohne Übersteuern
+  const comp = ctx.createDynamicsCompressor()
+  comp.threshold.value = -6
+  comp.knee.value       = 0
+  comp.ratio.value      = 20
+  comp.attack.value     = 0.0005
+  comp.release.value    = 0.05
+  const master = ctx.createGain()
+  master.gain.value = 2.5
+  master.connect(comp)
+  comp.connect(ctx.destination)
+
+  // Rauschen für den Anschlag-Klick
+  const noiseLen = Math.floor(ctx.sampleRate * 0.04)
+  const noiseBuf = ctx.createBuffer(1, noiseLen, ctx.sampleRate)
+  const data     = noiseBuf.getChannelData(0)
+  for (let i = 0; i < noiseLen; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / noiseLen)
+
+  for (let i = 0; i < 3; i++) {
+    const t = ctx.currentTime + i * 0.42
+
+    // Dumpfer Metall-Ton: tiefe Teiltöne, sehr kurzer Abfall (~0.14 s)
+    const lp = ctx.createBiquadFilter()
+    lp.type = 'lowpass'
+    lp.frequency.value = 1800
+    lp.connect(master)
+    const parts: [number, number][] = [[310, 1.0], [740, 0.6], [1250, 0.3]]
+    for (const [freq, amp] of parts) {
+      const osc = ctx.createOscillator()
+      const g   = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.value = freq
+      g.gain.setValueAtTime(amp, t)
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14)
+      osc.connect(g); g.connect(lp)
+      osc.start(t); osc.stop(t + 0.16)
+    }
+
+    // Tiefer "Thump" (fallende Frequenz) für Wucht
+    const thump  = ctx.createOscillator()
+    const thumpG = ctx.createGain()
+    thump.type = 'sine'
+    thump.frequency.setValueAtTime(170, t)
+    thump.frequency.exponentialRampToValueAtTime(55, t + 0.12)
+    thumpG.gain.setValueAtTime(1.3, t)
+    thumpG.gain.exponentialRampToValueAtTime(0.0001, t + 0.16)
+    thump.connect(thumpG); thumpG.connect(master)
+    thump.start(t); thump.stop(t + 0.18)
+
+    // Klick
+    const noise  = ctx.createBufferSource()
+    const noiseG = ctx.createGain()
+    noise.buffer = noiseBuf
+    noiseG.gain.value = 0.5
+    noise.connect(noiseG); noiseG.connect(lp)
+    noise.start(t)
   }
 }
 
@@ -136,26 +204,34 @@ export function useWorkoutTimer(settings: WorkoutSettings) {
 
     const next = plan[nextIdx]
 
-    // Workout ENDE: Glocke + Phasenende-Signal
+    const ctx = audioCtxRef.current
+
+    // Workout ENDE: drei laute Dings
     if (next.type === 'done') {
       setCurrentPhaseIndex(nextIdx)
       setRemainingSeconds(0)
       setRemainingMs(0)
       setStatus('done')
-      if (audioCtxRef.current) playBell(audioCtxRef.current)
+      if (ctx) playDings(ctx)
       return
     }
 
-    // Glocke beim Start jeder Runde:
-    // – erste Runde: wenn prepare → work
-    // – folgende Runden: wenn round-rest → work (erster Satz der Runde)
-    if (
-      next.type === 'work' &&
-      next.set === 1 &&
-      (prevPhase?.type === 'prepare' || prevPhase?.type === 'round-rest') &&
-      audioCtxRef.current
-    ) {
-      playBell(audioCtxRef.current)
+    if (ctx) {
+      if (prevPhase?.type === 'work') {
+        // Satz/Runde zu Ende: ding ding ding, danach Stimme "Pause"
+        playDings(ctx)
+        if (next.type === 'set-rest' || next.type === 'round-rest') {
+          setTimeout(() => speak('Pause'), 2900)
+        }
+      } else if (
+        next.type === 'work' && next.set === 1 &&
+        (prevPhase?.type === 'prepare' || prevPhase?.type === 'round-rest')
+      ) {
+        // Start einer Runde: lange Glocke
+        playBell(ctx)
+      } else {
+        playEndSignal(ctx)
+      }
     }
 
     phaseEndTimeRef.current = performance.now() + next.duration * 1000
@@ -173,17 +249,16 @@ export function useWorkoutTimer(settings: WorkoutSettings) {
     const remainingSec = Math.ceil(remaining / 1000)
 
     if (remaining <= 0) {
-      if (audioCtxRef.current) playEndSignal(audioCtxRef.current)
       advancePhase()
     } else {
       // Töne & Ansagen: einmal pro Sekunde auslösen
       if (remainingSec !== lastBeepSecRef.current) {
         const phase = phasesRef.current[currentPhaseIndexRef.current]
         if (phase && phase.type !== 'prepare') {
-          if (remainingSec === 10) {
-            // Sprachansage + kurzer Warnton
-            speak('Last 10 seconds')
-            if (audioCtxRef.current) beep(audioCtxRef.current, 659, 0.18, 0.7)
+          if (remainingSec === 10 && phase.duration > 10) {
+            // 3 dumpfe, laute Schläge, danach Sprachansage
+            if (audioCtxRef.current) playDullHits(audioCtxRef.current)
+            setTimeout(() => speak('Last 10 seconds'), 1400)
           } else if (remainingSec <= 3 && remainingSec > 0) {
             if (audioCtxRef.current) playCountdownBeep(audioCtxRef.current)
           }
@@ -248,7 +323,6 @@ export function useWorkoutTimer(settings: WorkoutSettings) {
   const skip = useCallback(() => {
     if (statusRef.current === 'idle' || statusRef.current === 'done') return
     ensureAudio()
-    if (audioCtxRef.current) playEndSignal(audioCtxRef.current)
     advancePhase()
   }, [advancePhase, ensureAudio])
 
