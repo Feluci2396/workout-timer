@@ -1,0 +1,401 @@
+/* ── Reset ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0a0a10;
+  --surface:   #111118;
+  --surface2:  #18181f;
+  --line:      rgba(255,255,255,0.07);
+  --text:      #ffffff;
+  --text2:     rgba(255,255,255,0.45);
+  --text3:     rgba(255,255,255,0.2);
+  --accent:    #f97316;
+  --rad:       14px;
+  --rad-full:  9999px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display',
+               'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+#root { min-height: 100%; display: flex; flex-direction: column; }
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  max-width: 430px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EINSTELLUNGSSEITE
+═══════════════════════════════════════════════════════════════════════════ */
+
+.settings-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: max(40px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+/* Großer Header */
+.s-header {
+  padding: 52px 28px 32px;
+}
+.s-header h1 {
+  font-size: 2.8rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+/* Abschnitte */
+.s-section {
+  padding: 20px 28px 4px;
+  border-top: 1px solid var(--line);
+}
+
+.s-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 12px;
+}
+
+/* Name-Input */
+.name-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font-size: 1rem;
+  font-family: inherit;
+  padding: 6px 0 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.name-input:focus { border-bottom-color: var(--accent); }
+.name-input::placeholder { color: var(--text3); }
+
+/* ── Stepper-Zeile ─────────────────────────────────────────────────────── */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 54px;
+  border-bottom: 1px solid var(--line);
+}
+.row-label {
+  font-size: 0.95rem;
+  color: var(--text2);
+}
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.step-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--rad-full);
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 1.15rem;
+  font-weight: 400;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  transition: background 0.12s;
+}
+.step-btn:active { background: rgba(255,255,255,0.12); }
+.step-val {
+  min-width: 36px;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Drum-Picker ────────────────────────────────────────────────────────── */
+.drum-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0 14px;
+  border-bottom: 1px solid var(--line);
+  gap: 16px;
+}
+.drum-field:last-child { border-bottom: none; }
+
+.drum-label {
+  font-size: 0.95rem;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+
+/* Äußerer Container: bestimmt die sichtbare Fläche */
+.drum-picker {
+  position: relative;
+  width: 130px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--surface2);
+  overflow: hidden;
+}
+
+/* Scrollbarer Bereich */
+.drum-scroll {
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;  /* iOS Momentum Scrolling */
+  scrollbar-width: none;
+}
+.drum-scroll::-webkit-scrollbar { display: none; }
+
+/* Einzelnes Element */
+.drum-item {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  scroll-snap-align: center;
+  user-select: none;
+  transition: opacity 0.1s;
+}
+.drum-pad { pointer-events: none; }
+
+/* Zahl im Element */
+.drum-num {
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255,255,255,0.22);
+  letter-spacing: -0.01em;
+  transition: color 0.1s, font-size 0.1s;
+}
+.drum-unit {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.2);
+  font-weight: 500;
+  transition: color 0.1s;
+  margin-top: 3px;
+}
+
+/* Aktives (mittleres) Element */
+.drum-item.is-sel .drum-num {
+  font-size: 1.6rem;
+  color: #ffffff;
+}
+.drum-item.is-sel .drum-unit {
+  color: var(--text2);
+}
+
+/* Verblassungsmasken oben & unten (blendet nicht-aktive Elemente aus) */
+.drum-fade-top,
+.drum-fade-bot {
+  position: absolute;
+  left: 0; right: 0;
+  height: 96px;   /* 2 × ITEM_H */
+  z-index: 2;
+  pointer-events: none;
+}
+.drum-fade-top {
+  top: 0;
+  background: linear-gradient(to bottom, var(--surface2) 15%, transparent);
+}
+.drum-fade-bot {
+  bottom: 0;
+  background: linear-gradient(to top, var(--surface2) 15%, transparent);
+}
+
+/* Markierungslinien für das aktive Element */
+.drum-line {
+  position: absolute;
+  left: 12px; right: 12px;
+  top: 50%;
+  height: 48px;
+  transform: translateY(-50%);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  z-index: 3;
+  pointer-events: none;
+  border-radius: 6px;
+}
+
+/* Zusammenfassung */
+.s-summary {
+  margin: 18px 28px 0;
+  font-size: 0.78rem;
+  color: var(--text3);
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+}
+
+/* Start-Button */
+.btn-start {
+  display: block;
+  margin: 24px 28px 0;
+  width: calc(100% - 56px);
+  padding: 18px;
+  border: none;
+  border-radius: var(--rad-full);
+  background: var(--accent);
+  color: #fff;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn-start:active { opacity: 0.85; transform: scale(0.98); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TIMER-SEITE
+═══════════════════════════════════════════════════════════════════════════ */
+
+.timer-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+/* Dünne Gesamtfortschrittsleiste */
+.overall-bar  { width: 100%; height: 2px; background: rgba(255,255,255,0.06); flex-shrink: 0; }
+.overall-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; }
+
+/* Phase-Label & Kontext */
+.phase-header  { margin-top: 32px; text-align: center; min-height: 52px; }
+.phase-name    { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.15em;
+                 text-transform: uppercase; color: var(--text2); }
+.phase-context { margin-top: 6px; font-size: 0.92rem; font-weight: 500;
+                 color: var(--text); letter-spacing: 0.02em; }
+
+/* Ring + überlagerte Zeitanzeige */
+.ring-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  width: 100%;
+  max-height: 320px;
+  padding: 12px;
+}
+.ring-svg { width: 100%; max-width: 280px; height: auto; }
+.ring-center {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.clock {
+  font-size: clamp(4.5rem, 22vw, 7.5rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+/* 10-Sekunden-Warnung */
+.ten-sec-alert {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+  animation: alertAnim 2.2s ease-out forwards;
+}
+@keyframes alertAnim {
+  0%  { opacity: 0; transform: translateY(4px); }
+  12% { opacity: 1; transform: translateY(0);   }
+  75% { opacity: 1; }
+  100%{ opacity: 0; }
+}
+
+/* Satz-Punkte */
+.dots {
+  display: flex; gap: 5px; justify-content: center;
+  flex-wrap: wrap; padding: 0 32px 10px; min-height: 26px;
+}
+.dot        { width: 7px; height: 7px; border-radius: var(--rad-full);
+              background: rgba(255,255,255,0.12); transition: background 0.2s, transform 0.2s; }
+.dot-done   { background: rgba(255,255,255,0.3); }
+.dot-active { background: #fff; transform: scale(1.4); }
+
+/* Steuer-Buttons */
+.controls {
+  display: flex; align-items: center; justify-content: center;
+  gap: 20px; padding: 8px 28px 0; width: 100%;
+}
+.ctrl-icon {
+  width: 52px; height: 52px;
+  border-radius: var(--rad-full);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: manipulation;
+  transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+.ctrl-icon svg  { width: 18px; height: 18px; }
+.ctrl-icon:active { background: rgba(255,255,255,0.1); color: var(--text); }
+
+.ctrl-main {
+  width: 72px; height: 72px;
+  border-radius: var(--rad-full);
+  border: none;
+  background: #ffffff;
+  color: #0a0a10;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: manipulation;
+  transition: opacity 0.12s, transform 0.1s;
+  flex-shrink: 0;
+}
+.ctrl-main svg  { width: 26px; height: 26px; }
+.ctrl-main:active { opacity: 0.85; transform: scale(0.94); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FERTIG-SEITE
+═══════════════════════════════════════════════════════════════════════════ */
+
+.done-page {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; padding: 40px 28px; text-align: center;
+}
+.done-icon svg { width: 72px; height: 72px; }
+.done-title    { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 8px; }
+.done-name     { font-size: 0.95rem; color: var(--text2); }
+.done-stats    { font-size: 0.82rem; color: var(--text3); }
+.done-page .btn-start { margin-top: 20px; }
+
+/* ── Kleine Bildschirme ─────────────────────────────────────────────────── */
+@media (max-height: 680px) {
+  .phase-header { margin-top: 14px; }
+  .ring-wrap    { max-height: 250px; }
+  .clock        { font-size: clamp(3.5rem, 20vw, 5rem); }
+}

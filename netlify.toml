@@ -1,0 +1,10 @@
+# Netlify Deployment-Konfiguration
+[build]
+  command   = "npm run build"
+  publish   = "dist"
+
+# Wichtig für Single-Page-Apps: alle Routen auf index.html umleiten
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
