@@ -11,6 +11,33 @@ function createAudioContext(): AudioContext | null {
   } catch { return null }
 }
 
+// ── App-Lautstärke ─────────────────────────────────────────────────────────
+// Alle Töne laufen über einen gemeinsamen Regler, unabhängig von der System-/Musiklautstärke.
+// Dahinter sitzt ein Limiter, damit auch Werte über 100 % nicht verzerren.
+let masterVolume = 1
+let masterNode: GainNode | null = null
+
+function out(ctx: AudioContext): GainNode {
+  if (!masterNode || masterNode.context !== ctx) {
+    const limiter = ctx.createDynamicsCompressor()
+    limiter.threshold.value = -1
+    limiter.knee.value       = 0
+    limiter.ratio.value      = 20
+    limiter.attack.value     = 0.001
+    limiter.release.value    = 0.1
+    masterNode = ctx.createGain()
+    masterNode.gain.value = masterVolume
+    masterNode.connect(limiter)
+    limiter.connect(ctx.destination)
+  }
+  return masterNode
+}
+
+function setMasterVolume(v: number) {
+  masterVolume = v
+  if (masterNode) masterNode.gain.value = v
+}
+
 // Basis-Beep mit DynamicsCompressor für maximale Lautstärke ohne Verzerrung
 function beep(ctx: AudioContext, freq: number, dur: number, vol = 1.0) {
   const osc  = ctx.createOscillator()
@@ -23,7 +50,7 @@ function beep(ctx: AudioContext, freq: number, dur: number, vol = 1.0) {
   comp.release.value    = 0.1
   osc.connect(gain)
   gain.connect(comp)
-  comp.connect(ctx.destination)
+  comp.connect(out(ctx))
   osc.frequency.value = freq
   osc.type = 'sine'
   gain.gain.setValueAtTime(vol, ctx.currentTime)
@@ -57,7 +84,7 @@ function playBell(ctx: AudioContext, offset = 0, decayScale = 1) {
   comp.ratio.value      = 6
   comp.attack.value     = 0.0001  // sofortiger Anschlag → "Ding"
   comp.release.value    = 0.5
-  comp.connect(ctx.destination)
+  comp.connect(out(ctx))
 
   for (const [freq, amp, baseDecay] of partials) {
     const decay = baseDecay * decayScale
@@ -101,7 +128,7 @@ function playDullHits(ctx: AudioContext) {
   master.gain.value = 6
   master.connect(shaper)
   shaper.connect(comp)
-  comp.connect(ctx.destination)
+  comp.connect(out(ctx))
 
   // Rauschen für den Anschlag-Klick
   const noiseLen = Math.floor(ctx.sampleRate * 0.04)
@@ -158,7 +185,7 @@ function speak(text: string) {
   u.lang   = 'en-US'
   u.rate   = 1.0
   u.pitch  = 1.1
-  u.volume = 1.0
+  u.volume = Math.min(1, masterVolume)  // Sprache kann nicht über 100 % hinaus
   window.speechSynthesis.speak(u)
 }
 
@@ -204,6 +231,15 @@ export function useWorkoutTimer(settings: WorkoutSettings) {
     if (audioCtxRef.current?.state === 'suspended') audioCtxRef.current.resume()
   }, [])
 
+  // App-Lautstärke aus den Einstellungen übernehmen
+  useEffect(() => { setMasterVolume(settings.volume) }, [settings.volume])
+
+  // Kurzer Probeton, damit man die eingestellte Lautstärke hört
+  const previewVolume = useCallback(() => {
+    ensureAudio()
+    if (audioCtxRef.current) playBell(audioCtxRef.current, 0, 0.2)
+  }, [ensureAudio])
+
   // ── Nächste Phase ─────────────────────────────────────────────────────────
   const advancePhase = useCallback(() => {
     const prevPhase = phasesRef.current[currentPhaseIndexRef.current]
@@ -236,8 +272,9 @@ export function useWorkoutTimer(settings: WorkoutSettings) {
         next.type === 'work' && next.set === 1 &&
         (prevPhase?.type === 'prepare' || prevPhase?.type === 'round-rest')
       ) {
-        // Start einer Runde: lange Glocke
+        // Start einer Runde: lange Glocke, dann Stimme
         playBell(ctx)
+        setTimeout(() => speak('Round started'), 1300)
       } else {
         playEndSignal(ctx)
       }
@@ -349,6 +386,6 @@ export function useWorkoutTimer(settings: WorkoutSettings) {
     remainingMs,
     currentPhase: phases[currentPhaseIndex] ?? null,
     totalPhases:  phases.length,
-    start, pause, resume, reset, skip,
+    start, pause, resume, reset, skip, previewVolume,
   }
 }

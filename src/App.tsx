@@ -87,6 +87,28 @@ function Stepper({ label, value, min, max, onChange }: StepperProps) {
   )
 }
 
+// ── App-Lautstärke (unabhängig von der Musik, z. B. Spotify) ────────────────
+interface VolumeProps { value: number; onChange: (v: number) => void; onCommit: () => void }
+function VolumeSlider({ value, onChange, onCommit }: VolumeProps) {
+  const pct = Math.round(value * 100)
+  return (
+    <div className="vol">
+      <svg className="vol-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor" />
+        {pct > 0   && <path d="M15.5 8.5a5 5 0 0 1 0 7" />}
+        {pct > 60  && <path d="M18.5 5.5a9 9 0 0 1 0 13" />}
+      </svg>
+      <input className="vol-range" type="range" min={0} max={150} step={5}
+        value={pct} aria-label="App-Lautstärke"
+        style={{ ['--fill' as string]: `${(pct / 150) * 100}%` }}
+        onChange={e => onChange(Number(e.target.value) / 100)}
+        onPointerUp={onCommit} onKeyUp={onCommit} />
+      <span className="vol-val">{pct}%</span>
+    </div>
+  )
+}
+
 // ── Drum-Picker (für Zeitwerte) ────────────────────────────────────────────
 const ITEM_H  = 44   // Höhe eines einzelnen Elements in px
 const VISIBLE = 3    // Anzahl sichtbarer Elemente
@@ -237,6 +259,12 @@ export default function App() {
             </div>
           </div>
 
+          {/* Lautstärke */}
+          <div className="s-section">
+            <VolumeSlider value={settings.volume}
+              onChange={v => update('volume', v)} onCommit={timer.previewVolume} />
+          </div>
+
           {/* Zusammenfassung */}
           <div className="s-summary">
             {settings.rounds} × {settings.sets} Sätze &middot;&nbsp;
@@ -310,6 +338,11 @@ export default function App() {
             ))}
           </div>
         )}
+
+        <div className="timer-vol">
+          <VolumeSlider value={settings.volume}
+            onChange={v => update('volume', v)} onCommit={timer.previewVolume} />
+        </div>
 
         <div className="controls">
           <button className="ctrl-icon" onClick={timer.reset} aria-label="Reset">
