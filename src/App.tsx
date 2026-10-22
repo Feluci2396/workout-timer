@@ -88,8 +88,8 @@ function Stepper({ label, value, min, max, onChange }: StepperProps) {
 }
 
 // ── Drum-Picker (für Zeitwerte) ────────────────────────────────────────────
-const ITEM_H  = 48   // Höhe eines einzelnen Elements in px
-const VISIBLE = 5    // Anzahl sichtbarer Elemente
+const ITEM_H  = 44   // Höhe eines einzelnen Elements in px
+const VISIBLE = 3    // Anzahl sichtbarer Elemente
 
 function genRange(from: number, to: number, step: number): number[] {
   const arr: number[] = []
@@ -203,7 +203,7 @@ export default function App() {
         <div className="settings-page">
 
           <header className="s-header">
-            <h1>Workout<br />Timer</h1>
+            <h1>Workout Timer</h1>
           </header>
 
           {/* Name */}
@@ -214,27 +214,27 @@ export default function App() {
               onChange={e => update('name', e.target.value)} />
           </div>
 
-          {/* Runden */}
+          {/* Anzahl */}
           <div className="s-section">
-            <div className="s-title">Runden</div>
-            <Stepper label="Anzahl" value={settings.rounds} min={1} max={20}
+            <Stepper label="Runden" value={settings.rounds} min={1} max={20}
               onChange={v => update('rounds', v)} />
-            <DrumPicker label="Pause" unit="s"
-              values={rrstValues} selected={settings.roundRest}
-              onChange={v => update('roundRest', v)} />
+            <Stepper label="Sätze pro Runde" value={settings.sets} min={1} max={30}
+              onChange={v => update('sets', v)} />
           </div>
 
-          {/* Sätze */}
+          {/* Zeiten */}
           <div className="s-section">
-            <div className="s-title">Sätze pro Runde</div>
-            <Stepper label="Anzahl" value={settings.sets} min={1} max={30}
-              onChange={v => update('sets', v)} />
-            <DrumPicker label="Dauer" unit="s"
-              values={durValues} selected={settings.setDuration}
-              onChange={v => update('setDuration', v)} />
-            <DrumPicker label="Pause" unit="s"
-              values={restValues} selected={settings.setRest}
-              onChange={v => update('setRest', v)} />
+            <div className="drum-row">
+              <DrumPicker label="Satzdauer" unit="s"
+                values={durValues} selected={settings.setDuration}
+                onChange={v => update('setDuration', v)} />
+              <DrumPicker label="Satzpause" unit="s"
+                values={restValues} selected={settings.setRest}
+                onChange={v => update('setRest', v)} />
+              <DrumPicker label="Rundenpause" unit="s"
+                values={rrstValues} selected={settings.roundRest}
+                onChange={v => update('roundRest', v)} />
+            </div>
           </div>
 
           {/* Zusammenfassung */}

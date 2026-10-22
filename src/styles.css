@@ -50,10 +50,10 @@ html, body {
 
 /* Großer Header */
 .s-header {
-  padding: 52px 28px 32px;
+  padding: max(20px, env(safe-area-inset-top)) 28px 14px;
 }
 .s-header h1 {
-  font-size: 2.8rem;
+  font-size: 1.9rem;
   font-weight: 800;
   line-height: 1.05;
   letter-spacing: -0.03em;
@@ -61,7 +61,7 @@ html, body {
 
 /* Abschnitte */
 .s-section {
-  padding: 20px 28px 4px;
+  padding: 10px 28px 2px;
   border-top: 1px solid var(--line);
 }
 
@@ -83,7 +83,7 @@ html, body {
   color: var(--text);
   font-size: 1rem;
   font-family: inherit;
-  padding: 6px 0 14px;
+  padding: 4px 0 10px;
   outline: none;
   transition: border-color 0.2s;
 }
@@ -95,9 +95,10 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 54px;
+  height: 48px;
   border-bottom: 1px solid var(--line);
 }
+.row:last-child { border-bottom: none; }
 .row-label {
   font-size: 0.95rem;
   color: var(--text2);
@@ -133,27 +134,34 @@ html, body {
 }
 
 /* ── Drum-Picker ────────────────────────────────────────────────────────── */
+.drum-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 4px 0 10px;
+}
 .drum-field {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 0 14px;
-  border-bottom: 1px solid var(--line);
-  gap: 16px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
 }
-.drum-field:last-child { border-bottom: none; }
 
 .drum-label {
-  font-size: 0.95rem;
-  color: var(--text2);
-  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text3);
+  text-align: center;
+  white-space: nowrap;
 }
 
 /* Äußerer Container: bestimmt die sichtbare Fläche */
 .drum-picker {
   position: relative;
-  width: 130px;
-  flex-shrink: 0;
+  width: 100%;
   border-radius: 12px;
   background: var(--surface2);
   overflow: hidden;
@@ -170,7 +178,7 @@ html, body {
 
 /* Einzelnes Element */
 .drum-item {
-  height: 48px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -212,17 +220,17 @@ html, body {
 .drum-fade-bot {
   position: absolute;
   left: 0; right: 0;
-  height: 96px;   /* 2 × ITEM_H */
+  height: 40px;
   z-index: 2;
   pointer-events: none;
 }
 .drum-fade-top {
   top: 0;
-  background: linear-gradient(to bottom, var(--surface2) 15%, transparent);
+  background: linear-gradient(to bottom, var(--surface2) 0%, transparent);
 }
 .drum-fade-bot {
   bottom: 0;
-  background: linear-gradient(to top, var(--surface2) 15%, transparent);
+  background: linear-gradient(to top, var(--surface2) 0%, transparent);
 }
 
 /* Markierungslinien für das aktive Element */
@@ -230,7 +238,7 @@ html, body {
   position: absolute;
   left: 12px; right: 12px;
   top: 50%;
-  height: 48px;
+  height: 44px;
   transform: translateY(-50%);
   border-top: 1px solid rgba(255,255,255,0.1);
   border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -241,7 +249,7 @@ html, body {
 
 /* Zusammenfassung */
 .s-summary {
-  margin: 18px 28px 0;
+  margin: 10px 28px 0;
   font-size: 0.78rem;
   color: var(--text3);
   letter-spacing: 0.02em;
@@ -251,9 +259,9 @@ html, body {
 /* Start-Button */
 .btn-start {
   display: block;
-  margin: 24px 28px 0;
+  margin: 14px 28px 0;
   width: calc(100% - 56px);
-  padding: 18px;
+  padding: 16px;
   border: none;
   border-radius: var(--rad-full);
   background: var(--accent);

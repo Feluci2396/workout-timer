@@ -84,14 +84,23 @@ function playDings(ctx: AudioContext) {
 function playDullHits(ctx: AudioContext) {
   // Harter Limiter: erlaubt eine sehr hohe Eingangslautstärke ohne Übersteuern
   const comp = ctx.createDynamicsCompressor()
-  comp.threshold.value = -6
+  comp.threshold.value = -2
   comp.knee.value       = 0
   comp.ratio.value      = 20
   comp.attack.value     = 0.0005
   comp.release.value    = 0.05
+  // Sättigung: schneidet Spitzen weich ab und macht den Schlag dadurch deutlich lauter/druckvoller
+  const shaper = ctx.createWaveShaper()
+  const curve  = new Float32Array(1024)
+  for (let i = 0; i < curve.length; i++) {
+    const x = (i / (curve.length - 1)) * 2 - 1
+    curve[i] = Math.tanh(x * 3)
+  }
+  shaper.curve = curve
   const master = ctx.createGain()
-  master.gain.value = 2.5
-  master.connect(comp)
+  master.gain.value = 6
+  master.connect(shaper)
+  shaper.connect(comp)
   comp.connect(ctx.destination)
 
   // Rauschen für den Anschlag-Klick
