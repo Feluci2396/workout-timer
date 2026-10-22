@@ -263,11 +263,9 @@ export function useWorkoutTimer(settings: WorkoutSettings) {
 
     if (ctx) {
       if (prevPhase?.type === 'work') {
-        // Satz/Runde zu Ende: ding ding ding, danach Stimme "Pause"
+        // Satz/Runde zu Ende: ding ding ding, gleichzeitig die Stimme "Pause"
         playDings(ctx)
-        if (next.type === 'set-rest' || next.type === 'round-rest') {
-          setTimeout(() => speak('Pause'), 2900)
-        }
+        if (next.type === 'set-rest' || next.type === 'round-rest') speak('Pause')
       } else if (
         next.type === 'work' && next.set === 1 &&
         (prevPhase?.type === 'prepare' || prevPhase?.type === 'round-rest')
@@ -277,6 +275,8 @@ export function useWorkoutTimer(settings: WorkoutSettings) {
         setTimeout(() => speak('Round started'), 1300)
       } else {
         playEndSignal(ctx)
+        // Neuer Satz (nicht der erste einer Runde): Stimme nach dem Doppelton
+        if (next.type === 'work') setTimeout(() => speak('Set started'), 700)
       }
     }
 
